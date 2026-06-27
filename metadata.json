@@ -1,0 +1,6 @@
+{
+  "name": "CampusFlow",
+  "description": "A modern campus student dashboard with AI flashcard generation, notice summarizing, and task management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
