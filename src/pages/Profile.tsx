@@ -1,23 +1,34 @@
 import React, { useState } from 'react';
-import { User, Mail, Phone, BookOpen, GraduationCap, Calendar, Lock, Eye, EyeOff, CheckSquare, Award } from 'lucide-react';
+import { User, Mail, Phone, BookOpen, GraduationCap, Calendar, Lock, Eye, EyeOff, CheckSquare, Award, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Profile() {
   const userString = localStorage.getItem('campusflow_user');
-  const user = userString ? JSON.parse(userString) : {
-    fullName: 'John Doe',
-    branch: 'Computer Science & Engineering',
-    year: '3rd Year',
-    subjects: 'Database Systems, Artificial Intelligence, Web Dev',
-    phoneNumber: '+1234567890',
-    email: 'demo@campus.edu',
-    password: 'password'
-  };
+  const user = userString ? JSON.parse(userString) : null;
 
   const [showPassword, setShowPassword] = useState(false);
-  const tasks = JSON.parse(localStorage.getItem('campusflow_mock_tasks') || '[]');
-  const completedTasksCount = tasks.filter((t: any) => t.status === 'completed').length;
-  const pendingTasksCount = tasks.filter((t: any) => t.status !== 'completed').length;
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-5 text-center px-4">
+        <div className="p-4 bg-amber-50 text-amber-500 rounded-full">
+          <AlertTriangle className="w-10 h-10" />
+        </div>
+        <div className="space-y-1.5">
+          <h3 className="text-lg font-black text-slate-800">No Profile Data Found</h3>
+          <p className="text-sm font-medium text-slate-500 max-w-sm">
+            Your session appears to have expired or no profile was returned from the server. Please log out and log back in.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Task stats from dashboard data aren't available here without an extra call,
+  // so we show a placeholder until a /profile API endpoint is wired up.
+  const completedTasksCount = user.completedTasks ?? '—';
+  const pendingTasksCount = user.pendingTasks ?? '—';
+
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

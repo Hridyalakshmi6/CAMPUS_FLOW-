@@ -13,34 +13,63 @@ import {
   ListTodo, 
   TrendingUp, 
   ArrowRight,
-  ArrowUpRight
+  ArrowUpRight,
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [tasks, setTasks] = useState<any[]>([]);
 
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [stats, allTasks] = await Promise.all([
+        apiService.getDashboard(),
+        apiService.getTasks(),
+      ]);
+      setDashboardData(stats);
+      setTasks(allTasks);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load dashboard. Please ensure the backend is running.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const stats = await apiService.getDashboard();
-        const allTasks = await apiService.getTasks();
-        setDashboardData(stats);
-        setTasks(allTasks);
-      } catch (err: any) {
-        toast.error('Error fetching dashboard stats');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
 
   if (loading) {
     return <Loading type="spinner" />;
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-5 text-center px-4">
+        <div className="p-4 bg-red-50 text-red-500 rounded-full">
+          <AlertTriangle className="w-10 h-10" />
+        </div>
+        <div className="space-y-1.5">
+          <h3 className="text-lg font-black text-slate-800">Unable to Load Dashboard</h3>
+          <p className="text-sm font-medium text-slate-500 max-w-sm">{error}</p>
+        </div>
+        <button
+          onClick={fetchData}
+          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition shadow-md cursor-pointer"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Retry
+        </button>
+      </div>
+    );
   }
 
   const userString = localStorage.getItem('campusflow_user');

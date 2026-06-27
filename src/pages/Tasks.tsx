@@ -4,7 +4,7 @@ import TaskCard from '../components/TaskCard';
 import Modal from '../components/Modal';
 import Loading from '../components/Loading';
 import EmptyState from '../components/EmptyState';
-import { Plus, Search, Filter, BookOpen, Clock, Calendar, CheckSquare, Bell, CalendarDays } from 'lucide-react';
+import { Plus, Search, Filter, BookOpen, Clock, Calendar, CheckSquare, Bell, CalendarDays, AlertTriangle, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Task {
@@ -20,6 +20,7 @@ interface Task {
 export default function Tasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // Search and Filter State
   const [search, setSearch] = useState('');
@@ -49,11 +50,13 @@ export default function Tasks() {
   ];
 
   const fetchTasks = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const data = await apiService.getTasks();
       setTasks(data);
     } catch (err: any) {
-      toast.error('Error loading tasks.');
+      setError(err.message || 'Failed to load tasks. Please ensure the backend is running.');
     } finally {
       setLoading(false);
     }
@@ -143,6 +146,27 @@ export default function Tasks() {
 
     return matchesSearch && matchesStatus && matchesSubject;
   });
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-5 text-center px-4">
+        <div className="p-4 bg-red-50 text-red-500 rounded-full">
+          <AlertTriangle className="w-10 h-10" />
+        </div>
+        <div className="space-y-1.5">
+          <h3 className="text-lg font-black text-slate-800">Unable to Load Tasks</h3>
+          <p className="text-sm font-medium text-slate-500 max-w-sm">{error}</p>
+        </div>
+        <button
+          onClick={fetchTasks}
+          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition shadow-md cursor-pointer"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
