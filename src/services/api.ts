@@ -1,14 +1,27 @@
 import axios from 'axios';
+import type {
+  LoginResponse,
+  RegisterResponse,
+  Task,
+  CreateTaskPayload,
+  UpdateTaskPayload,
+  DashboardData,
+  FlashcardResponse,
+  NoticeSummary,
+  AppNotification,
+  Settings,
+  User,
+} from '../types';
 
-// Set up the base Axios instance
+// ── Axios instance with base URL from env ────────────────────
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Interceptor to automatically attach JWT token from localStorage
+// ── Request interceptor: attach JWT ──────────────────────────
 API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('campusflow_token');
@@ -17,15 +30,18 @@ API.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor: extract a human-readable error message
+// ── Response interceptor: normalize errors + handle 401 ──────
 API.interceptors.response.use(
   (response) => response,
   (error) => {
+    // On 401 Unauthorized → dispatch a global event so AuthContext
+    // can perform a clean logout without a direct hook call here.
+    if (error?.response?.status === 401) {
+      window.dispatchEvent(new Event('auth:unauthorized'));
+    }
     const message =
       error?.response?.data?.message ||
       error?.response?.data?.error ||
@@ -35,54 +51,84 @@ API.interceptors.response.use(
   }
 );
 
+// ── API service methods ───────────────────────────────────────
 export const apiService = {
-  // Authentication
-  register: async (userData: any) => {
-    const res = await API.post('/register', userData);
+
+  // ── Authentication ─────────────────────────────────────────
+  register: async (userData: Record<string, string>): Promise<RegisterResponse> => {
+    const res = await API.post<RegisterResponse>('/register', userData);
     return res.data;
   },
 
-  login: async (credentials: any) => {
-    const res = await API.post('/login', credentials);
+  login: async (credentials: { email: string; password: string }): Promise<LoginResponse> => {
+    const res = await API.post<LoginResponse>('/login', credentials);
     return res.data;
   },
 
-  // Dashboard stats
-  getDashboard: async () => {
-    const res = await API.get('/dashboard');
+  // ── Dashboard ──────────────────────────────────────────────
+  getDashboard: async (): Promise<DashboardData> => {
+    const res = await API.get<DashboardData>('/dashboard');
     return res.data;
   },
 
-  // Task Management
-  getTasks: async () => {
-    const res = await API.get('/tasks');
+  // ── Task Management ────────────────────────────────────────
+  getTasks: async (): Promise<Task[]> => {
+    const res = await API.get<Task[]>('/tasks');
     return res.data;
   },
 
-  createTask: async (taskData: any) => {
-    const res = await API.post('/tasks', taskData);
+  createTask: async (taskData: CreateTaskPayload): Promise<Task> => {
+    const res = await API.post<Task>('/tasks', taskData);
     return res.data;
   },
 
-  updateTask: async (id: string, taskData: any) => {
-    const res = await API.put(`/tasks/${id}`, taskData);
+  updateTask: async (id: string, taskData: UpdateTaskPayload): Promise<Task> => {
+    const res = await API.put<Task>(`/tasks/${id}`, taskData);
     return res.data;
   },
 
-  deleteTask: async (id: string) => {
-    const res = await API.delete(`/tasks/${id}`);
+  deleteTask: async (id: string): Promise<{ message: string }> => {
+    const res = await API.delete<{ message: string }>(`/tasks/${id}`);
     return res.data;
   },
 
-  // AI Study Buddy (Flashcard Generator)
-  generateFlashcards: async (lectureNotes: string) => {
-    const res = await API.post('/ai/flashcards', { notes: lectureNotes });
+  // ── Profile ────────────────────────────────────────────────
+  getProfile: async (): Promise<User> => {
+    const res = await API.get<User>('/profile');
     return res.data;
   },
 
-  // Notice Summarizer
-  summarizeNotice: async (noticeText: string, eventDate: string) => {
-    const res = await API.post('/ai/summarize', { notice: noticeText, eventDate });
+  updateProfile: async (data: Partial<User>): Promise<User> => {
+    const res = await API.put<User>('/profile', data);
+    return res.data;
+  },
+
+  // ── AI — Study Buddy ───────────────────────────────────────
+  generateFlashcards: async (lectureNotes: string): Promise<FlashcardResponse> => {
+    const res = await API.post<FlashcardResponse>('/ai/flashcards', { notes: lectureNotes });
+    return res.data;
+  },
+
+  // ── AI — Notice Summarizer ─────────────────────────────────
+  summarizeNotice: async (noticeText: string, eventDate: string): Promise<NoticeSummary> => {
+    const res = await API.post<NoticeSummary>('/ai/summarize', { notice: noticeText, eventDate });
+    return res.data;
+  },
+
+  // ── Notifications ──────────────────────────────────────────
+  getNotifications: async (): Promise<AppNotification[]> => {
+    const res = await API.get<AppNotification[]>('/notifications');
+    return res.data;
+  },
+
+  // ── Settings ───────────────────────────────────────────────
+  getSettings: async (): Promise<Settings> => {
+    const res = await API.get<Settings>('/settings');
+    return res.data;
+  },
+
+  updateSettings: async (data: Partial<Settings>): Promise<Settings> => {
+    const res = await API.put<Settings>('/settings', data);
     return res.data;
   },
 };

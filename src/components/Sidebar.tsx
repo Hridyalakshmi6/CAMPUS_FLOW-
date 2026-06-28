@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   CheckSquare, 
@@ -8,32 +8,33 @@ import {
   User, 
   LogOut, 
   GraduationCap,
-  X
+  X,
+  Bell,
+  Settings,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useAuth } from '../hooks/useAuth';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const navigate = useNavigate();
+const navItems = [
+  { name: 'Dashboard',        path: '/dashboard',          icon: LayoutDashboard },
+  { name: 'Tasks',            path: '/tasks',              icon: CheckSquare },
+  { name: 'AI Study Buddy',   path: '/study-buddy',        icon: Sparkles },
+  { name: 'Notice Summarizer',path: '/notice-summarizer',  icon: Megaphone },
+  { name: 'Notifications',   path: '/notifications',       icon: Bell },
+  { name: 'Profile',          path: '/profile',            icon: User },
+  { name: 'Settings',         path: '/settings',           icon: Settings },
+];
 
-  const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Tasks', path: '/tasks', icon: CheckSquare },
-    { name: 'AI Study Buddy', path: '/study-buddy', icon: Sparkles },
-    { name: 'Notice Summarizer', path: '/notice-summarizer', icon: Megaphone },
-    { name: 'Profile', path: '/profile', icon: User },
-  ];
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const { logout, user } = useAuth();
 
   const handleLogout = () => {
-    localStorage.removeItem('campusflow_token');
-    localStorage.removeItem('campusflow_user');
-    toast.success('Logged out successfully');
-    navigate('/login');
     onClose();
+    logout();
   };
 
   return (
@@ -41,7 +42,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Mobile Backdrop Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs lg:hidden transition-opacity"
+          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs lg:hidden"
           onClick={onClose}
         />
       )}
@@ -53,13 +54,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         }`}
       >
         {/* Header Branding */}
-        <div>
+        <div className="flex flex-col min-h-0">
           <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800 bg-slate-950/40">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <div className="p-2 bg-blue-600 rounded-xl text-white shadow-xs">
-                <GraduationCap className="w-6 h-6" />
+                <GraduationCap className="w-5 h-5" />
               </div>
-              <span className="text-lg font-black tracking-wider text-white uppercase bg-clip-text">
+              <span className="text-base font-black tracking-wider text-white uppercase">
                 CampusFlow
               </span>
             </div>
@@ -71,8 +72,23 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             </button>
           </div>
 
+          {/* User summary in sidebar */}
+          {user && (
+            <div className="px-5 py-4 border-b border-slate-800/60">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-blue-600 text-white font-black text-sm flex items-center justify-center shrink-0">
+                  {user.fullName.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-white truncate">{user.fullName}</p>
+                  <p className="text-3xs font-semibold uppercase tracking-wider text-slate-400 truncate">{user.branch}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Navigation Links */}
-          <nav className="mt-6 px-4 space-y-1.5">
+          <nav className="mt-4 px-3 space-y-1 flex-1 overflow-y-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -81,14 +97,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   to={item.path}
                   onClick={onClose}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold tracking-wide transition-all duration-250 cursor-pointer ${
+                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 cursor-pointer ${
                       isActive
                         ? 'bg-blue-600 text-white shadow-xs'
-                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                        : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
                     }`
                   }
                 >
-                  <Icon className="w-5 h-5 shrink-0" />
+                  <Icon className="w-4.5 h-4.5 shrink-0" />
                   {item.name}
                 </NavLink>
               );
@@ -96,14 +112,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </nav>
         </div>
 
-        {/* Footer Navigation / Logout */}
-        <div className="p-4 border-t border-slate-800">
+        {/* Footer — Logout */}
+        <div className="p-3 border-t border-slate-800">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold tracking-wide text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors cursor-pointer"
+            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold tracking-wide text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors cursor-pointer"
           >
-            <LogOut className="w-5 h-5 shrink-0" />
-            Logout
+            <LogOut className="w-4.5 h-4.5 shrink-0" />
+            Sign Out
           </button>
         </div>
       </aside>
